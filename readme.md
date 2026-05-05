@@ -43,7 +43,7 @@ Fully configured IDE experience with:
 - Debugging (DAP)
 - Formatting tools
 
-## ðŸ”§ Developer Tools
+##  Developer Tools
 - lazygit (Git TUI)
 - fzf (fuzzy finder)
 - ripgrep (fast search)
@@ -53,12 +53,22 @@ Fully configured IDE experience with:
 
 #  Installation
 
-## 1. Clone or copy setup script
+## 1. Use the setup script in this repo
+
+The setup entrypoint for this project is:
 
 ```bash
-chmod +x setup.sh
-./setup.sh
+zsh-dev-full-setup.sh
+```
 
+If you just cloned the repository, run:
+
+```bash
+chmod +x zsh-dev-full-setup.sh
+./zsh-dev-full-setup.sh
+```
+
+> Note: the current `zsh-dev-full-setup.sh` in this repository is empty right now. Add your setup commands to that file, then run it.
 
 ## 2. Restart shell
 
