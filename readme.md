@@ -14,6 +14,7 @@ It includes:
 - smart navigation (zoxide)
 - file manager (Superfile)
 - Git UI (lazygit)
+- Docker UI (lazydocker)
 - integrated workflows between all tools
 
 ---
@@ -43,22 +44,62 @@ Fully configured IDE experience with:
 - Debugging (DAP)
 - Formatting tools
 
-## ðŸ”§ Developer Tools
+##  Developer Tools
 - lazygit (Git TUI)
+- lazydocker (Docker TUI)
 - fzf (fuzzy finder)
 - ripgrep (fast search)
 - bat (syntax highlighting cat replacement)
 
 ---
 
+# Libraries and Packages Used
+
+This repository installs and configures the following tools, packages, and plugins:
+
+- **System packages**: `zsh`, `git`, `curl`, `wget`, `fzf`, `bat`, `fd-find`, `ripgrep`, `lsof`, `build-essential`, `python3`, `python3-pip`, `unzip`, `eza` , `btop` , `ninja-build`, `cmake`, `gettext`, `fonts-powerline`
+- **Zsh shell components**: `oh-my-zsh`, `zsh-autosuggestions`, `zsh-syntax-highlighting`, `zsh-completions`, `powerlevel10k`
+- **External utilities**: `zoxide`, `lazygit`, `lazydocker`, `Superfile`, `Neovim`
+- **Neovim plugins**:
+  - `nvim-neo-tree/neo-tree.nvim`
+  - `nvim-lua/plenary.nvim`
+  - `nvim-tree/nvim-web-devicons`
+  - `MunifTanjim/nui.nvim`
+  - `nvim-telescope/telescope.nvim`
+  - `nvim-treesitter/nvim-treesitter`
+  - `williamboman/mason.nvim`
+  - `williamboman/mason-lspconfig.nvim`
+  - `neovim/nvim-lspconfig`
+  - `hrsh7th/nvim-cmp`
+  - `hrsh7th/cmp-nvim-lsp`
+  - `lewis6991/gitsigns.nvim`
+  - `kdheepak/lazygit.nvim`
+  - `akinsho/toggleterm.nvim`
+  - `mfussenegger/nvim-dap`
+  - `stevearc/conform.nvim`
+
+---
+
 #  Installation
 
-## 1. Clone or copy setup script
+## 1. Use the setup script in this repo
+
+The setup entrypoint for this project is:
 
 ```bash
-chmod +x setup.sh
-./setup.sh
+curl -fsSL https://raw.githubusercontent.com/Zourvan/My-Workflow/main/zsh-dev-full-setup.sh | bash
+```
 
+If you just cloned the repository, run:
+
+```bash
+chmod +x zsh-dev-full-setup.sh
+./zsh-dev-full-setup.sh
+```
+
+> **Important Note:** Do not run the script with `sudo`, as it applies settings for the root user and may cause errors. Run it as your regular user.
+
+> **LDAP/AD Note:** If your user is managed externally (LDAP/AD), `chsh` may fail with a message like `user does not exist in /etc/passwd`. In that case, run `chsh -s $(command -v zsh)` manually (or ask your admin to set your login shell), then log out and sign in again.
 
 ## 2. Restart shell
 
@@ -175,6 +216,14 @@ Alias:
 
 ```bash
 lg
+```
+
+## lazydocker
+
+Start UI:
+
+```bash
+lazydocker
 ```
 
 ---
@@ -331,3 +380,5 @@ ZSH (shell layer)
 zoxide (navigation layer)
 fzf (search layer)
 Superfile (file UI layer)
+```
+
