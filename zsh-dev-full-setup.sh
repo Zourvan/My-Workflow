@@ -272,14 +272,23 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 plugins=(
-  git docker docker-compose sudo extract
-  zsh-autosuggestions zsh-syntax-highlighting zsh-completions
+  git
+  docker
+  docker-compose
+  sudo
+  extract
+  colored-man-pages
+  command-not-found
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+  zsh-completions
 )
 
 source $ZSH/oh-my-zsh.sh
 '
 
 append_if_missing "ZOXIDE" '
+eval "$(zoxide init --cmd cd zsh)"
 eval "$(zoxide init zsh)"
 alias cd="z"
 alias cdi="zi"
@@ -293,8 +302,95 @@ export EDITOR="nvim"
 alias v="nvim"
 '
 
-append_if_missing "FZF" '
-export FZF_DEFAULT_COMMAND="fdfind --type f --hidden --exclude .git"
+append_if_missing "FZF SAFE" '
+# =========================================
+# FZF (Ubuntu-safe)
+# =========================================
+
+if command -v fdfind >/dev/null 2>&1; then
+  export FZF_DEFAULT_COMMAND="fdfind --type f --hidden --exclude .git"
+else
+  export FZF_DEFAULT_COMMAND="find . -type f"
+fi
+
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+
+if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then
+  source /usr/share/doc/fzf/examples/key-bindings.zsh
+fi
+
+if [ -f /usr/share/doc/fzf/examples/completion.zsh ]; then
+  source /usr/share/doc/fzf/examples/completion.zsh
+fi
+'
+
+append_if_missing "ALIASES - GENERAL" '
+# =========================================
+# ALIASES - GENERAL
+# =========================================
+
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+alias cls='clear'
+'
+
+append_if_missing "GIT" '
+# =========================================
+# GIT
+# =========================================
+
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline --graph --decorate'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+'
+
+append_if_missing "DOCKER" '
+# =========================================
+# DOCKER
+# =========================================
+
+alias d='docker'
+alias dc='docker compose'
+alias dps='docker ps'
+alias dimg='docker images'
+alias dlog='docker logs -f'
+alias dexec='docker exec -it'
+
+alias dcu='docker compose up -d'
+alias dcd='docker compose down'
+alias dcl='docker compose logs -f'
+'
+
+append_if_missing "NETWORK" '
+# =========================================
+# NETWORK
+# =========================================
+
+alias ports='ss -tulpen'
+alias myip='curl -s ifconfig.me'
+alias listen='lsof -i -P -n'
+'
+
+append_if_missing "PROMPT" '
+# =========================================
+# PROMPT
+# =========================================
+
+export PROMPT='%F{cyan}%n@%m%f %F{yellow}%~%f %# '
+'
+
+append_if_missing "PATH" '
+# =========================================
+# PATH
+# =========================================
+
+export PATH="$HOME/.local/bin:$PATH"
 '
 
 append_if_missing "FZF-SPF" '
@@ -318,7 +414,7 @@ append_if_missing "CHPWD" '
 chpwd() {
   eza --icons --group-directories-first
 }
-# '
+'
 # --------------------------------------------------
 # 11. Set Zsh as default shell and switch session
 # --------------------------------------------------
@@ -339,8 +435,14 @@ elif [ "$(getent passwd $USER | cut -d: -f7)" != "$ZSH_PATH" ]; then
     echo "⚠️ Could not change shell (permission or policy restriction)"
     echo -e "\033[33m[Manual Step] It looks like your account is managed externally (e.g. LDAP/AD) and may not exist in local /etc/passwd.\033[0m"
     echo -e "\033[33m[Manual Step] Open your Linux terminal and run this command manually:\033[0m"
-    echo -e "\033[33m  chsh -s $ZSH_PATH\033[0m"
-    echo -e "\033[33m[Manual Step] If that still fails, ask your system admin to set your login shell to: $ZSH_PATH\033[0m"
+    echo -e "\033[33m# Auto-switch to zsh for interactive shells"
+    echo -e "\033[33mcase \$- in"
+    echo -e "\033[33m  *i*)"
+    echo -e "\033[33m    if command -v zsh >/dev/null 2>&1 && [ -z \"\$ZSH_VERSION\" ]; then"
+    echo -e "\033[33m      exec zsh"
+    echo -e "\033[33m    fi"
+    echo -e "\033[33m  ;;"
+    echo -e "\033[33mesac"
     echo -e "\033[33m[Manual Step] After shell is updated, fully log out and sign in again.\033[0m"
   fi
 else
