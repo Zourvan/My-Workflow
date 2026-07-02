@@ -73,6 +73,8 @@ Inside Neovim:
 | **C compiler / build tools** | Treesitter parser builds (platform packages vary) |
 | **ripgrep** (`rg`) | Telescope `live_grep` (recommended; install if grep is empty) |
 | **Nerd Font** (terminal) | Icons in nvim-tree, lualine, bufferline |
+| **chafa** or **ascii-image-converter** (optional) | Dashboard image → ASCII art (`assets/dashboard.png`) |
+| **baleia.nvim** (via `:Lazy sync`) | ANSI colors on the converted dashboard image |
 
 `init.lua` sets the editor shell to **zsh**. On Windows without WSL, change `vim.opt.shell` and ToggleTerm’s `shell` to your preferred shell (e.g. PowerShell) or use Neovim from WSL with this file unchanged.
 
@@ -88,28 +90,57 @@ Install these **on the machine where you run Neovim** (your dev box or CI image)
 
 #### 1. tree-sitter CLI (required)
 
-Version **0.26.1+**. Verify with `tree-sitter --version`.
-
-**Linux (Debian/Ubuntu)** — if your package manager has no suitable package, use Rust’s cargo:
+Version **0.26.1+** with a working **`build`** subcommand. Verify:
 
 ```bash
-sudo apt install build-essential
-cargo install tree-sitter-cli --locked
 tree-sitter --version
+tree-sitter build --help   # must succeed; do not use a 0.20.x distro-only binary
+which tree-sitter
 ```
 
-**Arch Linux:**
+**Wrong CLI version** — if parser install fails with:
+
+```text
+The subcommand 'build' wasn't recognized
+        Did you mean 'build-wasm'?
+```
+
+your `tree-sitter` binary is **too old** (common on Ubuntu/Debian: `apt install tree-sitter` ships ~0.20.x). Remove or shadow it, then install a current CLI:
 
 ```bash
-sudo pacman -S tree-sitter
-tree-sitter --version
+# Debian/Ubuntu: avoid the old apt package; use cargo instead
+sudo apt remove tree-sitter 2>/dev/null || true
+sudo apt install build-essential curl tar
+cargo install tree-sitter-cli --version "=0.26.6" --locked --force
+export PATH="$HOME/.cargo/bin:$PATH"
+tree-sitter build --help
 ```
+
+**Linux (Debian/Ubuntu)** — preferred install:
+
+```bash
+sudo apt install build-essential curl tar
+cargo install tree-sitter-cli --version "=0.26.6" --locked
+export PATH="$HOME/.cargo/bin:$PATH"
+tree-sitter --version
+tree-sitter build --help
+```
+
+**Arch Linux** — ensure the package is recent enough (`build --help` works):
+
+```bash
+sudo pacman -S tree-sitter base-devel
+tree-sitter build --help
+```
+
+If Arch’s `tree-sitter` is still too old, use the same `cargo install` command as above.
 
 **macOS:**
 
 ```bash
 brew install tree-sitter
 tree-sitter --version
+tree-sitter build --help
 ```
 
 **Windows (PowerShell)** — use one of:
@@ -119,9 +150,10 @@ scoop install tree-sitter
 # or
 choco install tree-sitter
 # or (Rust toolchain required)
-cargo install tree-sitter-cli --locked
+cargo install tree-sitter-cli --version "=0.26.6" --locked
 
 tree-sitter --version
+tree-sitter build --help
 ```
 
 #### 2. C compiler (required to compile parsers)
@@ -145,6 +177,49 @@ Inside Neovim:
 
 **Windows without WSL:** install `tree-sitter` and a C toolchain on Windows itself, or run Neovim inside WSL and install the Linux packages there. Parser builds do not run on a machine that only has the config copied but not these tools.
 
+### Dashboard image (`assets/dashboard.png`)
+
+On startup, [`lua/plugins/dashboard.lua`](./lua/plugins/dashboard.lua) looks for `assets/dashboard.{png,jpg,jpeg,webp,gif}` under your config directory (e.g. `~/.config/nvim/assets/dashboard.png`). If a file exists, it is converted to colored ASCII with **chafa** (preferred) or **ascii-image-converter**. Without either tool, Neovim still opens but shows a text fallback header and a warning:
+
+```text
+dashboard: found .../dashboard.png but conversion failed. Install chafa or ascii-image-converter.
+```
+
+Install **one** converter on the machine where you run Neovim, then restart the terminal and Neovim:
+
+**chafa** (recommended):
+
+```bash
+# Debian / Ubuntu
+sudo apt install chafa
+
+# Arch
+sudo pacman -S chafa
+
+# macOS
+brew install chafa
+
+chafa --version
+```
+
+**ascii-image-converter** (alternative; needs a terminal that supports ANSI colors for full effect):
+
+```bash
+# Arch (AUR)
+yay -S ascii-image-converter
+
+# Or Go install (add $(go env GOPATH)/bin to PATH)
+go install github.com/TheZoraiz/ascii-image-converter@latest
+
+ascii-image-converter --version
+```
+
+**Windows:** use WSL and install `chafa` inside Linux, or install [chafa for Windows](https://hpjansson.org/chafa/download.html) / a packaged `ascii-image-converter` and ensure the binary is on `PATH` in the same environment as `nvim`.
+
+**Colors:** `:Lazy sync` installs `baleia.nvim`, which renders ANSI sequences from chafa. If baleia is missing, the dashboard still works but may be monochrome.
+
+**Customize:** replace `assets/dashboard.png` with your own image (same filename stem `dashboard`), or remove/rename the file to use the built-in ASCII “NVIM” header only.
+
 ---
 
 ## What’s included
@@ -162,7 +237,8 @@ Inside Neovim:
 | Plugin | Role |
 |--------|------|
 | [folke/lazy.nvim](https://github.com/folke/lazy.nvim) | Plugin manager (auto-installed on first run) |
-| [nvimdev/dashboard-nvim](https://github.com/nvimdev/dashboard-nvim) | Startup screen (hyper theme) |
+| [nvimdev/dashboard-nvim](https://github.com/nvimdev/dashboard-nvim) | Startup screen (hyper theme; optional `assets/dashboard.png`) |
+| [m00qek/baleia.nvim](https://github.com/m00qek/baleia.nvim) | ANSI colors for dashboard image header |
 | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) | Colorscheme: `tokyonight-night` |
 | [nvim-tree/nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua) | Side file explorer (width 30) |
 | [nvim-lualine/lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Status line |
@@ -251,12 +327,15 @@ After edits, restart Neovim or run `:Lazy sync` if you added or removed plugins.
 |-------|-------------|
 | Plugins not loading | Run `:Lazy sync`; ensure `git` is on `PATH` |
 | `ENOENT: 'tree-sitter'` during lazy build / `:TSUpdate` | Install **tree-sitter CLI** (0.26.1+) and a **C compiler** on the host where Neovim runs; restart the terminal; run `:Lazy sync` then `:TSUpdate` (see [Installing tree-sitter and build tools](#installing-tree-sitter-and-build-tools)) |
+| `'build' wasn't recognized` / suggests `build-wasm` | **tree-sitter CLI too old** — uninstall distro `tree-sitter` (~0.20); install **0.26.1+** via `cargo` (see above); confirm `tree-sitter build --help` works; run `:TSInstall css` |
 | Treesitter errors / `ensure_installed` nil | Use nvim-treesitter 1.0 API (`:checkhealth nvim-treesitter`); install `tree-sitter` CLI + build tools; run `:TSUpdate` |
 | Telescope grep empty | Install `ripgrep` (`rg`) |
 | Broken icons | Use a Nerd Font in your terminal |
 | Terminal won’t open | Confirm `zsh` exists, or set `shell` to `bash` / PowerShell |
 | Wrong config loaded | Ensure `~/.config/nvim/init.lua` and `lua/` came from the same copy (no mixed old single-file config) |
 | Lazy errors on startup | Run `:Lazy sync`; fix syntax in `lua/plugins/*.lua`; check `:messages` |
+| Dashboard image warning / plain “NVIM” text | Install **chafa** or **ascii-image-converter**; verify `~/.config/nvim/assets/dashboard.png` exists; run `chafa --version` in the same shell as `nvim` (see [Dashboard image](#dashboard-image-assetsdashboardpng)) |
+| Dashboard image has no color | Run `:Lazy sync` so **baleia.nvim** is installed; use **chafa** (not plain symbols-only terminal) |
 
 ---
 
