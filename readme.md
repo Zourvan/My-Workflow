@@ -31,6 +31,7 @@ Detailed install steps, keymaps, and troubleshooting live in each folder’s gui
 ```text
 My Workflow/
 ├── readme.md           # This file — start here
+├── zsh-dev-full-setup.sh  # One-shot Ubuntu/Debian bootstrap (Zsh + tools + Neovim)
 ├── zsh/
 │   ├── .zshrc          # → ~/.zshrc
 │   └── readme.md
@@ -55,11 +56,43 @@ On your machine you will also have (not in the repo):
 
 ---
 
-## Quick start (full stack)
+## Quick start
+
+### Option A — Automated install (Ubuntu / Debian)
+
+For a fresh **Ubuntu or Debian** machine (including **WSL2**), you can bootstrap Zsh, CLI tools, Neovim, and a working shell/editor config in one step:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zourvan/My-Workflow/main/zsh-dev-full-setup.sh | bash
+```
+
+Or run from a local clone:
+
+```bash
+git clone https://github.com/Zourvan/My-Workflow.git
+cd My-Workflow
+bash zsh-dev-full-setup.sh
+```
+
+**Notes:**
+
+| Item | Detail |
+|------|--------|
+| **Do not** run with `sudo` | The script calls `sudo` itself for `apt` and `/usr/local/bin` installs |
+| **Platform** | Ubuntu / Debian only (`apt`-based). macOS and native Windows: use Option B |
+| **What it installs** | Zsh, Oh My Zsh, Powerlevel10k, zoxide, lazygit, lazydocker, Superfile, Neovim, and common CLI tools |
+| **Configs** | Writes embedded `.zshrc` and Neovim config under `~` — not symlinks to this repo |
+| **After it finishes** | Open Neovim and run `:Lazy sync` to install plugins |
+
+To use the **dotfiles from this repo** instead of the embedded configs, run Option A first, then replace files with copy/symlink from [§4 below](#4-deploy-configs-from-this-repo).
+
+---
+
+### Option B — Manual install (full stack)
 
 Replace `/path/to/My Workflow` with your clone path (e.g. `D:\MD\Project\My Workflow` in WSL: `/mnt/d/MD/Project/My Workflow`).
 
-### 1. Prerequisites
+#### 1. Prerequisites
 
 | Requirement | Why |
 |-------------|-----|
@@ -80,7 +113,7 @@ chsh -s "$(which zsh)"
 
 Log out and back in, then continue in a **Zsh** session.
 
-### 2. Oh My Zsh + Powerlevel10k + Zsh plugins
+#### 2. Oh My Zsh + Powerlevel10k + Zsh plugins
 
 Follow [`zsh/readme.md`](zsh/readme.md) sections 2–4 for:
 
@@ -88,7 +121,7 @@ Follow [`zsh/readme.md`](zsh/readme.md) sections 2–4 for:
 - Powerlevel10k theme clone
 - `zsh-autosuggestions`, `zsh-syntax-highlighting`, `zsh-completions`
 
-### 3. CLI tools (shell)
+#### 3. CLI tools (shell)
 
 From [`zsh/readme.md`](zsh/readme.md) §5 — at minimum for the aliases in `.zshrc`:
 
@@ -100,7 +133,7 @@ sudo apt install -y fzf fd-find bat eza ripgrep neovim tmux
 
 Also install [Superfile](https://superfile.dev/) if you use `sf`, `ff`, `ffz`, or `sfe`.
 
-### 4. Deploy configs from this repo
+#### 4. Deploy configs from this repo
 
 **Copy everything:**
 
@@ -126,7 +159,7 @@ ln -sf "$REPO/nvim/init.lua" ~/.config/nvim/init.lua
 ln -sf "$REPO/Tmux/.tmux.conf" ~/.tmux.conf
 ```
 
-### 5. Tmux Plugin Manager (one time)
+#### 5. Tmux Plugin Manager (one time)
 
 ```bash
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -134,7 +167,7 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
 Start tmux, press **Ctrl+Space** then **Shift+I** to install plugins. See [`Tmux/readme.md`](Tmux/readme.md).
 
-### 6. Neovim plugins (one time)
+#### 6. Neovim plugins (one time)
 
 ```bash
 nvim
@@ -148,7 +181,7 @@ Inside Neovim:
 
 See [`nvim/readme.md`](nvim/readme.md).
 
-### 7. Prompt (optional)
+#### 7. Prompt (optional)
 
 If you want to change the prompt interactively instead of using the bundled `.p10k.zsh`:
 
@@ -156,7 +189,7 @@ If you want to change the prompt interactively instead of using the bundled `.p1
 p10k configure
 ```
 
-### 8. Reload
+#### 8. Reload
 
 ```bash
 exec zsh
