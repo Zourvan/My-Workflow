@@ -1,6 +1,25 @@
 # My Workflow — terminal dev environment
 
-Dotfiles and configs for a **terminal-first** development setup: Zsh with Oh My Zsh and Powerlevel10k, Neovim as the editor, and Tmux for persistent sessions. Everything is versioned in this repo; you copy or symlink files into your home directory.
+Dotfiles and automation for a **terminal-first** development setup: Zsh with Oh My Zsh and Powerlevel10k, Neovim as the editor, and Tmux for persistent sessions.
+
+**One project, one installer** — pick services interactively or via CLI:
+
+```bash
+git clone <repository>
+cd My-Workflow
+./install.sh                    # interactive menu
+```
+
+| Mode | Command | When to use |
+|------|---------|-------------|
+| **Interactive** | `./install.sh` | Choose profile or custom services |
+| **Developer** | `./install.sh --dev` | Shell + editor + CLI tools |
+| **DevOps lab** | `./install.sh --devops` | Docker, K8s, Terraform, Ansible |
+| **MLOps lab** | `./install.sh --mlops` | Python, Docker, AI, cloud CLIs |
+| **Golden Image** | `./install.sh --golden` | Full platform stack (VM templates) |
+| **Cherry-pick** | `./install.sh --only neovim,gi-docker` | Install only what you need |
+
+Everything is versioned here; installers deploy configs from this repo (not embedded copies).
 
 **Best on:** Linux, macOS, or **WSL2** on Windows. Native Windows terminals can use Neovim from `%LOCALAPPDATA%\nvim\`; Zsh/Tmux are intended for Unix-like environments.
 
@@ -12,7 +31,7 @@ Dotfiles and configs for a **terminal-first** development setup: Zsh with Oh My 
 |-------|--------|------------|
 | **Shell** | [`zsh/.zshrc`](zsh/.zshrc) | Oh My Zsh, autosuggestions, syntax highlighting, fzf, zoxide, eza, lazygit, Superfile |
 | **Prompt** | [`p10k/.p10k.zsh`](p10k/.p10k.zsh) | Powerlevel10k (classic powerline, Nerd Font, transient prompt) |
-| **Editor** | [`nvim/init.lua`](nvim/init.lua) | lazy.nvim, Tokyo Night, nvim-tree, Telescope, Treesitter, ToggleTerm |
+| **Editor** | [`nvim/`](nvim/) | lazy.nvim, Tokyo Night, nvim-tree, Telescope, Treesitter, ToggleTerm, Lualine |
 | **Multiplexer** | [`Tmux/.tmux.conf`](Tmux/.tmux.conf) | Catppuccin, TPM plugins, Ctrl+Space prefix, session restore |
 
 Detailed install steps, keymaps, and troubleshooting live in each folder’s guide:
@@ -29,66 +48,115 @@ Detailed install steps, keymaps, and troubleshooting live in each folder’s gui
 ## Repository layout
 
 ```text
-My Workflow/
-├── readme.md           # This file — start here
-├── zsh-dev-full-setup.sh  # One-shot Ubuntu/Debian bootstrap (Zsh + tools + Neovim)
-├── zsh/
-│   ├── .zshrc          # → ~/.zshrc
-│   └── readme.md
-├── p10k/
-│   ├── .p10k.zsh       # → ~/.p10k.zsh
-│   └── readme.md
-├── nvim/
-│   ├── init.lua        # → ~/.config/nvim/init.lua
-│   └── readme.md
-└── Tmux/
-    ├── .tmux.conf      # → ~/.tmux.conf
-    └── readme.md
+My-Workflow/
+├── install.sh                # ★ Unified installer (start here)
+├── verify.sh / update.sh / uninstall.sh
+├── install/
+│   ├── catalog.sh            # Master service registry
+│   ├── engine.sh             # Menus, presets, execution
+│   ├── lib/common.sh
+│   ├── dev/                  # Developer workstation modules
+│   │   ├── modules/          # system, neovim, zsh-config, …
+│   │   └── lib/
+│   └── platform/             # DevOps / MLOps / Golden Image
+│       ├── packages/         # docker, kubernetes, terraform, …
+│       ├── configs/          # git, zsh, tmux, ssh templates
+│       ├── verify.sh / update.sh / uninstall.sh
+│       └── docs/
+├── setup/ → install/dev      # backward-compat symlink
+├── golden-image/ → install/platform
+├── zsh-dev-full-setup.sh     # legacy → ./install.sh --dev
+│
+├── zsh/.zshrc
+├── p10k/.p10k.zsh
+├── nvim/                     # → ~/.config/nvim/
+└── Tmux/.tmux.conf
 ```
 
 On your machine you will also have (not in the repo):
 
 ```text
-~/.oh-my-zsh/              # Oh My Zsh
-~/.tmux/plugins/tpm/       # Tmux Plugin Manager
-~/.local/share/nvim/lazy/  # Neovim plugins (lazy.nvim)
+~/.oh-my-zsh/
+~/.tmux/plugins/tpm/
+~/.local/share/nvim/lazy/
+/var/log/golden-image/        # platform install logs
 ```
 
 ---
 
 ## Quick start
 
-### Option A — Automated install (Ubuntu / Debian)
+### Unified installer (recommended)
 
-For a fresh **Ubuntu or Debian** machine (including **WSL2**), you can bootstrap Zsh, CLI tools, Neovim, and a working shell/editor config in one step:
+```bash
+git clone https://github.com/Zourvan/My-Workflow.git
+cd My-Workflow
+./install.sh
+```
+
+Interactive menu:
+
+```text
+  1) Developer minimal     — shell + dotfiles
+  2) Developer full        — shell + editor + CLI tools
+  3) Developer IDE         — Neovim + lazygit + superfile
+  4) DevOps lab            — Docker, K8s, Terraform, Ansible
+  5) MLOps lab             — Python, Docker, AI, cloud
+  6) Golden Image (full)   — complete platform stack
+  7) Custom selection      — pick any services
+  8) List all services
+```
+
+### CLI presets
+
+| Command | Installs |
+|---------|----------|
+| `./install.sh --minimal` | Shell minimal (dev) |
+| `./install.sh --dev` | Full developer workstation |
+| `./install.sh --ide` | Neovim + tools |
+| `./install.sh --devops` | Docker, K8s, Terraform, Ansible, … |
+| `./install.sh --mlops` | Python, Docker, AI, cloud |
+| `./install.sh --golden` | Full platform (Golden Image) |
+| `./install.sh --all` | Everything |
+| `./install.sh --only neovim,gi-docker,gi-python` | Cherry-pick |
+| `./install.sh --list` | Show all services |
+
+Platform services use `gi-` prefix in catalog (aliases work: `docker` → `gi-docker`).
+
+### Management
+
+```bash
+sudo ./verify.sh                    # verify platform installs
+sudo ./update.sh                    # upgrade platform packages
+sudo ./uninstall.sh gi-docker         # rollback one service
+```
+
+### Option A — Golden Image only (VM templates)
+
+```bash
+cd My-Workflow
+sudo ./install.sh --golden
+sudo ./verify.sh
+```
+
+Docs: [`install/platform/README.md`](install/platform/README.md) · [`install/platform/docs/INSTALL.md`](install/platform/docs/INSTALL.md)
+
+### Option B — Developer workstation only
+
+```bash
+./install.sh --dev
+# or interactive: ./install.sh → choose 1, 2, or 3
+```
+
+### Option C — Remote bootstrap (legacy)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zourvan/My-Workflow/main/zsh-dev-full-setup.sh | bash
 ```
 
-Or run from a local clone:
+Runs `./install.sh --dev`.
 
-```bash
-git clone https://github.com/Zourvan/My-Workflow.git
-cd My-Workflow
-bash zsh-dev-full-setup.sh
-```
-
-**Notes:**
-
-| Item | Detail |
-|------|--------|
-| **Do not** run with `sudo` | The script calls `sudo` itself for `apt` and `/usr/local/bin` installs |
-| **Platform** | Ubuntu / Debian only (`apt`-based). macOS and native Windows: use Option B |
-| **What it installs** | Zsh, Oh My Zsh, Powerlevel10k, zoxide, lazygit, lazydocker, Superfile, Neovim, and common CLI tools |
-| **Configs** | Writes embedded `.zshrc` and Neovim config under `~` — not symlinks to this repo |
-| **After it finishes** | Open Neovim and run `:Lazy sync` to install plugins |
-
-To use the **dotfiles from this repo** instead of the embedded configs, run Option A first, then replace files with copy/symlink from [§4 below](#4-deploy-configs-from-this-repo).
-
----
-
-### Option B — Manual install (full stack)
+### Option D — Manual dotfiles only
 
 Replace `/path/to/My Workflow` with your clone path (e.g. `D:\MD\Project\My Workflow` in WSL: `/mnt/d/MD/Project/My Workflow`).
 
@@ -135,27 +203,28 @@ Also install [Superfile](https://superfile.dev/) if you use `sf`, `ff`, `ffz`, o
 
 #### 4. Deploy configs from this repo
 
-**Copy everything:**
+Copy or symlink the **entire** `nvim/` folder (not just `init.lua`).
+
+**Copy:**
 
 ```bash
-REPO="/path/to/My Workflow"
+REPO="/path/to/My-Workflow"
 
 cp "$REPO/zsh/.zshrc" ~/.zshrc
 cp "$REPO/p10k/.p10k.zsh" ~/.p10k.zsh
-mkdir -p ~/.config/nvim
-cp "$REPO/nvim/init.lua" ~/.config/nvim/init.lua
+rm -rf ~/.config/nvim
+cp -r "$REPO/nvim" ~/.config/nvim
 cp "$REPO/Tmux/.tmux.conf" ~/.tmux.conf
 ```
 
 **Or symlink** (repo updates apply after reload):
 
 ```bash
-REPO="/path/to/My Workflow"
+REPO="/path/to/My-Workflow"
 
 ln -sf "$REPO/zsh/.zshrc" ~/.zshrc
 ln -sf "$REPO/p10k/.p10k.zsh" ~/.p10k.zsh
-mkdir -p ~/.config/nvim
-ln -sf "$REPO/nvim/init.lua" ~/.config/nvim/init.lua
+ln -sfn "$REPO/nvim" ~/.config/nvim
 ln -sf "$REPO/Tmux/.tmux.conf" ~/.tmux.conf
 ```
 
@@ -203,16 +272,18 @@ exec zsh
 flowchart TD
   A[Install Zsh + git] --> B[Oh My Zsh + p10k theme + zsh plugins]
   B --> C[CLI tools: fzf eza bat fd ripgrep neovim tmux]
-  C --> D[Copy zsh/.zshrc + p10k/.p10k.zsh]
-  D --> E[Copy nvim/init.lua → Lazy sync]
+  C --> D[Copy zsh + p10k + nvim/ + tmux]
+  D --> E[Deploy nvim/ → Lazy sync]
   E --> F[Copy Tmux/.tmux.conf + TPM + Prefix+I]
   F --> G[exec zsh — daily use]
 ```
 
 1. **Shell foundation** — Zsh, Oh My Zsh, plugins, `.zshrc`, `.p10k.zsh`
-2. **Editor** — `init.lua`, `:Lazy sync`, `:TSUpdate` if needed
+2. **Editor** — copy `nvim/` → `~/.config/nvim`, `:Lazy sync`, `:TSUpdate` if needed
 3. **Tmux** — `.tmux.conf`, TPM, plugin install
 4. **Terminal font** — Nerd Font in your terminal emulator settings
+
+Or skip manual steps: `./install.sh --minimal` (shell) or `./install.sh --ide` (editor stack).
 
 Skipping Tmux is fine if you only want shell + Neovim.
 
@@ -332,7 +403,7 @@ Install details and per-package notes are in [`zsh/readme.md`](zsh/readme.md). S
 | docker / compose | Optional aliases in `.zshrc` |
 | build-essential (or equivalent) | Treesitter parser compile |
 
-**Neovim scope:** This repo’s `init.lua` is **UI + navigation** (no LSP, completion, or DAP). Extend `init.lua` when you need language servers.
+**Neovim scope:** UI + navigation (lazy.nvim, Treesitter, Telescope, file tree, terminal). No LSP/completion/DAP in the default config — extend `lua/plugins/` when needed. See [`nvim/readme.md`](nvim/readme.md).
 
 ---
 
@@ -340,13 +411,13 @@ Install details and per-package notes are in [`zsh/readme.md`](zsh/readme.md). S
 
 ### Linux / macOS
 
-Use the paths above (`~/.zshrc`, `~/.config/nvim/init.lua`, etc.). macOS: prefer `brew install` for tools — see [`zsh/readme.md`](zsh/readme.md).
+Use the paths above (`~/.zshrc`, `~/.config/nvim/`, etc.). macOS: prefer `brew install` for tools — see [`zsh/readme.md`](zsh/readme.md).
 
 ### Windows
 
 | Approach | Shell / Tmux | Neovim |
 |----------|----------------|--------|
-| **WSL2** (recommended) | Full stack as on Linux | `~/.config/nvim/init.lua` inside WSL |
+| **WSL2** (recommended) | Full stack as on Linux | `~/.config/nvim/` inside WSL (whole `nvim/` tree) |
 | **Native Windows** | Limited; use WSL for Zsh/Tmux | `%LOCALAPPDATA%\nvim\init.lua` — see [`nvim/readme.md`](nvim/readme.md) |
 
 `init.lua` sets `shell = "zsh"`. On native Windows without WSL, change shell in `init.lua` or run Neovim from WSL only.
@@ -363,7 +434,7 @@ Install a **Nerd Font v3** (e.g. MesloLGS NF, JetBrainsMono Nerd Font) and selec
 |--------|------|--------|
 | Aliases, fzf, zoxide | `zsh/.zshrc` | `source ~/.zshrc` |
 | Prompt segments | `p10k/.p10k.zsh` or `p10k configure` | `source ~/.p10k.zsh` |
-| Editor plugins / keys | `nvim/init.lua` | Restart nvim / `:Lazy sync` |
+| Editor plugins / keys | `nvim/` (`lua/plugins/`, `lua/config/`) | Restart nvim / `:Lazy sync` |
 | Tmux theme / plugins | `Tmux/.tmux.conf` | `tmux source-file ~/.tmux.conf` |
 
 Keep Powerlevel10k **instant prompt** at the top of `.zshrc` (already in the repo file). Avoid slow commands above that block.
@@ -374,6 +445,8 @@ Keep Powerlevel10k **instant prompt** at the top of `.zshrc` (already in the rep
 
 | Symptom | See |
 |---------|-----|
+| Installer / golden image issues | [`install/platform/docs/INSTALL.md`](install/platform/docs/INSTALL.md), `/var/log/golden-image/` |
+| Service install failed | Re-run `./install.sh --only <service-id>` |
 | Oh My Zsh / prompt broken | [`zsh/readme.md`](zsh/readme.md), [`p10k/readme.md`](p10k/readme.md) |
 | `command not found: eza`, `bat`, `fdfind` | [`zsh/readme.md`](zsh/readme.md) §5, Ubuntu aliases in `.zshrc` |
 | fzf keys not working | Install `fzf` package + key-bindings path |
@@ -407,6 +480,7 @@ git pull
 
 ## Links
 
+- **Installer:** [`install.sh`](install.sh) · [`install/catalog.sh`](install/catalog.sh) · [`install/platform/README.md`](install/platform/README.md)
 - [Oh My Zsh](https://ohmyzsh.sh/)
 - [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
 - [lazy.nvim](https://github.com/folke/lazy.nvim)
@@ -418,4 +492,4 @@ git pull
 
 ## License
 
-Personal dotfiles — use and adapt as you like. No warranty; test on a non-production machine first.
+Personal dotfiles and automation — use and adapt as you like. Platform framework: MIT ([`install/platform/LICENSE`](install/platform/LICENSE)). No warranty; test on a non-production machine first.

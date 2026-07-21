@@ -1,0 +1,28 @@
+[user]
+    name = Golden Image DevOps
+    email = devops@localhost
+    editor = nvim
+[init]
+    defaultBranch = main
+[pull]
+    rebase = false
+[push]
+    autoSetupRemote = true
+[core]
+    editor = nvim
+    autocrlf = input
+    fileMode = true
+[color]
+    ui = auto
+[alias]
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    lg = log --oneline --graph --decorate --all
+[diff]
+    tool = vimdiff
+[merge]
+    tool = vimdiff
+[credential]
+    helper = cache --timeout=3600

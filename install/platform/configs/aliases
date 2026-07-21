@@ -1,0 +1,62 @@
+# Golden Image — shared aliases (sourced from .bashrc / .zshrc)
+
+# General
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+alias cls='clear'
+
+# Git
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline --graph --decorate'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+
+# Docker
+alias d='docker'
+alias dc='docker compose'
+alias dps='docker ps'
+alias dimg='docker images'
+alias dlog='docker logs -f'
+alias dcu='docker compose up -d'
+alias dcd='docker compose down'
+alias dcl='docker compose logs -f'
+
+# DevOps tools
+alias lg='lazygit'
+alias ld='lazydocker'
+alias k='kubectl'
+alias tf='terraform'
+alias tg='terragrunt 2>/dev/null || terraform'
+
+# Network
+alias ports='ss -tulpen'
+alias myip='curl -s ifconfig.me'
+alias listen='lsof -i -P -n'
+
+# Editors
+export EDITOR='nvim'
+export VISUAL='nvim'
+alias v='nvim'
+
+# eza / modern ls
+if command -v eza >/dev/null 2>&1; then
+  alias ls='eza --icons --group-directories-first'
+fi
+
+# zoxide
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init bash 2>/dev/null || zoxide init zsh 2>/dev/null || true)"
+fi
+
+# fzf (Ubuntu: fdfind)
+if command -v fdfind >/dev/null 2>&1; then
+  export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --exclude .git'
+elif command -v fd >/dev/null 2>&1; then
+  export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+fi
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"

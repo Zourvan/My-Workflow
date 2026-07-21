@@ -1,0 +1,6 @@
+[2026-07-21T06:31:44Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0
+[2026-07-21T06:31:53Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0
+[2026-07-21T06:32:02Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit $?
+[2026-07-21T06:32:14Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit $?
+[2026-07-21T06:32:42Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0
+[2026-07-21T06:32:49Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0

@@ -1,0 +1,26 @@
+" Golden Image vim/nvim-compatible vimrc
+set nocompatible
+set number relativenumber
+set tabstop=2 shiftwidth=2 expandtab
+set smartindent
+set cursorline
+set incsearch hlsearch ignorecase smartcase
+set clipboard=unnamedplus
+set termguicolors
+set signcolumn=yes
+set updatetime=300
+set encoding=utf-8
+syntax on
+filetype plugin indent on
+
+" Leader
+let mapleader = " "
+
+" Quick save / quit
+nnoremap <leader>w :w<CR>
+nnoremap <leader>q :q<CR>
+
+" Use nvim if available
+if executable('nvim')
+  let $EDITOR = 'nvim'
+endif

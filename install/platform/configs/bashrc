@@ -1,0 +1,28 @@
+# Golden Image bashrc — appended to /etc/skel and user homes
+
+# If not running interactively, don't do anything
+case $- in
+  *i*) ;;
+  *) return ;;
+esac
+
+# Golden Image markers
+# golden-image-bashrc
+
+export PATH="$HOME/.local/bin:/usr/local/go/bin:$HOME/.cargo/bin:$PATH"
+
+# Load shared aliases
+[ -f ~/.golden-image-aliases ] && . ~/.golden-image-aliases
+
+# bash completion
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+  . /usr/share/bash-completion/bash_completion
+fi
+
+# Auto-switch to zsh if installed (optional — comment out to keep bash)
+if command -v zsh >/dev/null 2>&1 && [ -z "$ZSH_VERSION" ] && [ "${GI_KEEP_BASH:-0}" != "1" ]; then
+  export SHELL="$(command -v zsh)"
+fi
+
+# Prompt
+PS1='\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]\$ '
