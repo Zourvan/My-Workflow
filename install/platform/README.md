@@ -108,7 +108,6 @@ sudo ./uninstall.sh --all
 | `kubernetes` | 08-kubernetes | kubectl, Helm |
 | `terraform` | 09-terraform | HashiCorp Terraform |
 | `ansible` | 10-ansible | Ansible Core |
-| `cloud` | 11-cloud | AWS CLI, Azure CLI, Google Cloud SDK |
 | `security` | 12-security | UFW, fail2ban, unattended-upgrades |
 | `network` | 13-network | httpie, xh, grpcurl, doggo, WireGuard, OpenVPN, Tailscale |
 | `database` | 14-database | psql, redis-cli, mysql/mariadb, sqlite3 |

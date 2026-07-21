@@ -50,8 +50,6 @@ setopt AUTO_CD
 setopt INTERACTIVE_COMMENTS
 setopt NO_BEEP
 
-autoload -Uz compinit && compinit
-
 # =========================================
 # FZF (Ubuntu-safe)
 # =========================================

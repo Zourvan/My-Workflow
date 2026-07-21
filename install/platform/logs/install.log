@@ -4,3 +4,4 @@
 [2026-07-21T06:32:14Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit $?
 [2026-07-21T06:32:42Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0
 [2026-07-21T06:32:49Z] [ERROR] [unknown] Command failed (exit 1) at ./install.sh:1: exit 0
+[2026-07-21T07:18:22Z] [ERROR] [test] Command failed (exit 1) at ?:1: return

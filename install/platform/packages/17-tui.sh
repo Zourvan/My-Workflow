@@ -11,21 +11,27 @@ source "${GI_ROOT}/common.sh"
 gi_install_github_bin() {
   local repo="$1" binary="$2" arch_tag="$3"
   if gi_have_cmd "$binary"; then return 0; fi
-  local tag ver tgz
+  local tag ver tgz json url
   tag="$(gi_github_latest_tag "$repo")"
   ver="${tag#v}"
   tgz="${binary}_${ver}_Linux_${arch_tag}.tar.gz"
-  if ! curl -fsI "https://github.com/${repo}/releases/download/${tag}/${tgz}" | grep -q 200; then
+  url="https://github.com/${repo}/releases/download/${tag}/${tgz}"
+  if ! gi_url_ok "$url"; then
     tgz="${binary^}_${ver}_Linux_${arch_tag}.tar.gz"
+    url="https://github.com/${repo}/releases/download/${tag}/${tgz}"
   fi
-  if ! curl -fsI "https://github.com/${repo}/releases/download/${tag}/${tgz}" | grep -q 200; then
-    tgz="$(curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}" \
-      | grep -oE '"name": "[^"]+"' | cut -d'"' -f4 | grep -i linux | grep -i "${arch_tag}" | head -n1)"
+  if ! gi_url_ok "$url"; then
+    json="$(gi_github_release_json "$repo" "$tag")"
+    tgz="$(grep -oE '"name": "[^"]+\.tar\.gz"' <<<"$json" \
+      | cut -d'"' -f4 | grep -i linux | grep -i "${arch_tag}" | head -n1)"
+    url="https://github.com/${repo}/releases/download/${tag}/${tgz}"
   fi
-  gi_download "https://github.com/${repo}/releases/download/${tag}/${tgz}" "${GI_TMPDIR}/${tgz}"
+  [[ -n "$tgz" ]] || die "No ${binary} release asset for ${arch_tag} (${tag})"
+  gi_download "$url" "${GI_TMPDIR}/${tgz}"
   tar -xzf "${GI_TMPDIR}/${tgz}" -C "${GI_TMPDIR}"
   local found
   found="$(find "${GI_TMPDIR}" -type f -name "$binary" | head -n1)"
+  [[ -n "$found" ]] || die "Binary ${binary} not found in archive"
   install -m 755 "$found" "/usr/local/bin/${binary}"
   gi_register_rollback "rm -f /usr/local/bin/${binary}"
 }
@@ -50,8 +56,9 @@ gi_install() {
     else
       local tag asset
       tag="$(gi_github_latest_tag Byron/dua-cli)"
-      asset="$(curl -fsSL "https://api.github.com/repos/Byron/dua-cli/releases/tags/${tag}" \
-        | grep -oE '"name": "dua-[^"]+"' | cut -d'"' -f4 | grep linux | grep "$(gi_arch_map)" | head -n1)"
+      json="$(gi_github_release_json Byron/dua-cli "$tag")"
+      asset="$(grep -oE '"name": "dua-[^"]+"' <<<"$json" \
+        | cut -d'"' -f4 | grep linux | grep "$(gi_arch_map)" | head -n1)"
       if [[ -n "$asset" ]]; then
         gi_download "https://github.com/Byron/dua-cli/releases/download/${tag}/${asset}" "${GI_TMPDIR}/dua.tgz"
         tar -xzf "${GI_TMPDIR}/dua.tgz" -C "${GI_TMPDIR}"

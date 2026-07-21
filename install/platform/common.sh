@@ -209,10 +209,25 @@ gi_arch_map() {
   esac
 }
 
+gi_curl() {
+  gi_retry curl -fsSL --connect-timeout 30 --max-time "$GI_CMD_TIMEOUT" "$@"
+}
+
+gi_url_ok() {
+  local code
+  code="$(curl -fsSI -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo "000")"
+  [[ "$code" == "200" ]]
+}
+
 gi_github_latest_tag() {
-  local repo="$1"
-  gi_retry curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
-    | grep -m1 '"tag_name"' | cut -d '"' -f 4
+  local repo="$1" json
+  json="$(gi_curl "https://api.github.com/repos/${repo}/releases/latest")"
+  grep -m1 '"tag_name"' <<<"$json" | cut -d '"' -f 4
+}
+
+gi_github_release_json() {
+  local repo="$1" tag="$2"
+  gi_curl "https://api.github.com/repos/${repo}/releases/tags/${tag}"
 }
 
 # ---------------------------------------------------------------------------
@@ -230,11 +245,12 @@ gi_apt_install() {
 
 gi_apt_add_keyring() {
   # Usage: gi_apt_add_keyring <key_url> <signed-by_path>
-  local key_url="$1" key_path="$2"
+  local key_url="$1" key_path="$2" key_data
   gi_need_cmd curl
   gi_need_cmd gpg
   mkdir -p "$(dirname "$key_path")"
-  gi_retry curl -fsSL "$key_url" | gpg --dearmor -o "$key_path"
+  key_data="$(gi_curl "$key_url")"
+  printf '%s' "$key_data" | gpg --dearmor -o "$key_path"
   chmod 644 "$key_path"
 }
 
@@ -265,6 +281,7 @@ gi_download() {
   # gi_download <url> <dest>
   local url="$1" dest="$2"
   gi_need_cmd curl
+  mkdir -p "$(dirname "$dest")"
   gi_retry curl -fsSL --connect-timeout 30 --max-time "$GI_CMD_TIMEOUT" -o "$dest" "$url"
 }
 
@@ -274,7 +291,7 @@ gi_download_github_release() {
   local repo="$1" pattern="$2" dest_dir="$3"
   local tag json url asset
   tag="$(gi_github_latest_tag "$repo")"
-  json="$(curl -fsSL "https://api.github.com/repos/${repo}/releases/tags/${tag}")"
+  json="$(gi_curl "https://api.github.com/repos/${repo}/releases/tags/${tag}")"
   asset="$(echo "$json" | grep -oE '"name": "[^"]+"' | cut -d'"' -f4 | grep -E "$pattern" | head -n1)"
   [[ -n "$asset" ]] || { gi_error "No release asset matching /${pattern}/ for ${repo} ${tag}"; return 1; }
   url="https://github.com/${repo}/releases/download/${tag}/${asset}"

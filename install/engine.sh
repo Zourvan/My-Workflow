@@ -9,6 +9,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/catalog.sh"
 
 declare -a SELECTED_IDS=()
+declare -a MW_FAILED_SERVICES=()
+declare -a MW_SKIPPED_SERVICES=()
+declare -a MW_OK_SERVICES=()
 
 catalog_entry_field() {
   # field: 1=id 2=category 3=label 4=desc 5=tier 6=script 7=needs_root
@@ -94,14 +97,14 @@ dedupe_ordered() {
 
 run_service() {
   local id="$1"
-  local entry script tier needs_root base action=install
+  local entry script tier needs_root base action=install rc=0
   entry="$(catalog_find_entry "$id")" || die "Service not in catalog: $id"
   script="$(catalog_entry_field "$entry" 6)"
   tier="$(catalog_entry_field "$entry" 5)"
   needs_root="$(catalog_entry_field "$entry" 7)"
 
   case "$tier" in
-    dev)    base="$MW_DEV_ROOT" ;;
+    dev)      base="$MW_DEV_ROOT" ;;
     platform) base="$MW_PLATFORM_ROOT" ;;
     *) die "Unknown tier: $tier" ;;
   esac
@@ -113,13 +116,57 @@ run_service() {
   info "Running: $id ($tier)"
   if [[ "$needs_root" == "1" ]]; then
     if needs_sudo; then
-      sudo bash "$path" "$action"
+      sudo bash "$path" "$action" || rc=$?
     else
-      bash "$path" "$action"
+      bash "$path" "$action" || rc=$?
     fi
   else
-    bash "$path"
+    bash "$path" || rc=$?
   fi
+  return "$rc"
+}
+
+run_service_resilient() {
+  local id="$1" action rc=0
+  while true; do
+    if run_service "$id"; then
+      MW_OK_SERVICES+=("$id")
+      return 0
+    fi
+    rc=$?
+    action="$(prompt_failure_action "$id")"
+    case "$action" in
+      retry)
+        warn "Retrying ${id}..."
+        ;;
+      skip)
+        warn "Skipping ${id}"
+        MW_SKIPPED_SERVICES+=("$id")
+        return 0
+        ;;
+      abort)
+        die "Installation aborted by user at service: ${id}"
+        ;;
+    esac
+  done
+}
+
+print_install_summary() {
+  echo "========================================="
+  echo " Installation summary"
+  echo "========================================="
+  [[ ${#MW_OK_SERVICES[@]} -gt 0 ]]       && ok "Succeeded (${#MW_OK_SERVICES[@]}): ${MW_OK_SERVICES[*]}"
+  [[ ${#MW_SKIPPED_SERVICES[@]} -gt 0 ]]  && warn "Skipped (${#MW_SKIPPED_SERVICES[@]}): ${MW_SKIPPED_SERVICES[*]}"
+  [[ ${#MW_FAILED_SERVICES[@]} -gt 0 ]]    && die "Failed (${#MW_FAILED_SERVICES[@]}): ${MW_FAILED_SERVICES[*]}"
+  if [[ ${#MW_SKIPPED_SERVICES[@]} -gt 0 ]]; then
+    warn "Completed with skipped services — re-run: ./install.sh --only <id>"
+    return 1
+  fi
+  ok "Installation complete"
+  echo " Dev:      exec zsh  |  nvim → :Lazy sync"
+  echo " Platform: sudo ./verify.sh"
+  echo "========================================="
+  return 0
 }
 
 run_services() {
@@ -127,6 +174,10 @@ run_services() {
   local total="${#ids[@]}" n=0 id needs_any_root=0 entry
 
   [[ "$total" -gt 0 ]] || die "No services selected"
+
+  MW_OK_SERVICES=()
+  MW_SKIPPED_SERVICES=()
+  MW_FAILED_SERVICES=()
 
   for id in "${ids[@]}"; do
     entry="$(catalog_find_entry "$id")"
@@ -143,15 +194,11 @@ run_services() {
   for id in "${ids[@]}"; do
     n=$((n + 1))
     echo "[$n/$total] ── $id ──"
-    run_service "$id"
+    run_service_resilient "$id" || true
     echo
   done
 
-  echo "========================================="
-  ok "Installation complete"
-  echo " Dev:    exec zsh  |  nvim → :Lazy sync"
-  echo " Platform: sudo ./verify.sh"
-  echo "========================================="
+  print_install_summary
 }
 
 # ── Interactive menus ─────────────────────────────────────────────────────────
@@ -166,7 +213,7 @@ Choose a profile:
   2) Developer full        — shell + editor + CLI tools
   3) Developer IDE         — Neovim stack + lazygit + superfile
   4) DevOps lab            — Docker, K8s, Terraform, Ansible
-  5) MLOps lab             — Python, Docker, AI, cloud CLIs
+  5) MLOps lab             — Python, Docker, AI, monitoring
   6) Golden Image (full)   — complete platform stack
   7) Custom selection      — pick services one by one
   8) List all services
@@ -236,6 +283,7 @@ Management (platform):
 Environment:
   GI_TARGET_USER=devops                Target user for config deployment
   GI_FORCE_REINSTALL=1                 Force reinstall platform packages
+  MW_ON_ERROR=skip|retry|abort         On service failure (default: ask)
 EOF
 }
 

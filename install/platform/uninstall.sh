@@ -20,7 +20,7 @@ gi_ensure_dirs
 # Reverse install order for safe teardown
 GI_PACKAGE_ORDER=(
   "18-configs" "17-tui" "16-ai" "15-monitoring" "14-database"
-  "13-network" "12-security" "11-cloud" "10-ansible" "09-terraform"
+  "13-network" "12-security" "10-ansible" "09-terraform"
   "08-kubernetes" "07-docker" "06-rust" "05-go" "04-node" "03-python"
   "02-git" "01-shell" "00-system"
 )
@@ -45,7 +45,7 @@ gi_resolve_filter() {
     local found=0 p short
     for p in "${GI_PACKAGE_ORDER[@]}" "00-system" "01-shell" "02-git" "03-python" \
       "04-node" "05-go" "06-rust" "07-docker" "08-kubernetes" "09-terraform" \
-      "10-ansible" "11-cloud" "12-security" "13-network" "14-database" \
+      "10-ansible" "12-security" "13-network" "14-database" \
       "15-monitoring" "16-ai" "17-tui" "18-configs"; do
       short="$(gi_package_short_name "$p")"
       if [[ "$token" == "$short" || "$token" == "$p" ]]; then
@@ -67,7 +67,7 @@ Usage:
   sudo ./uninstall.sh --all
 
 Package names: system, shell, git, python, node, go, rust, docker,
-               kubernetes, terraform, ansible, cloud, security, network,
+               kubernetes, terraform, ansible, security, network,
                database, monitoring, ai, tui, configs
 EOF
 }

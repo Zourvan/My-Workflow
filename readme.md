@@ -15,7 +15,7 @@ cd My-Workflow
 | **Interactive** | `./install.sh` | Choose profile or custom services |
 | **Developer** | `./install.sh --dev` | Shell + editor + CLI tools |
 | **DevOps lab** | `./install.sh --devops` | Docker, K8s, Terraform, Ansible |
-| **MLOps lab** | `./install.sh --mlops` | Python, Docker, AI, cloud CLIs |
+| **MLOps lab** | `./install.sh --mlops` | Python, Docker, AI, monitoring |
 | **Golden Image** | `./install.sh --golden` | Full platform stack (VM templates) |
 | **Cherry-pick** | `./install.sh --only neovim,gi-docker` | Install only what you need |
 
@@ -101,7 +101,7 @@ Interactive menu:
   2) Developer full        — shell + editor + CLI tools
   3) Developer IDE         — Neovim + lazygit + superfile
   4) DevOps lab            — Docker, K8s, Terraform, Ansible
-  5) MLOps lab             — Python, Docker, AI, cloud
+  5) MLOps lab             — Python, Docker, AI, monitoring
   6) Golden Image (full)   — complete platform stack
   7) Custom selection      — pick any services
   8) List all services
@@ -115,7 +115,7 @@ Interactive menu:
 | `./install.sh --dev` | Full developer workstation |
 | `./install.sh --ide` | Neovim + tools |
 | `./install.sh --devops` | Docker, K8s, Terraform, Ansible, … |
-| `./install.sh --mlops` | Python, Docker, AI, cloud |
+| `./install.sh --mlops` | Python, Docker, AI, monitoring |
 | `./install.sh --golden` | Full platform (Golden Image) |
 | `./install.sh --all` | Everything |
 | `./install.sh --only neovim,gi-docker,gi-python` | Cherry-pick |

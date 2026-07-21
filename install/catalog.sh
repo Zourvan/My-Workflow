@@ -35,7 +35,6 @@ PLATFORM_CATALOG=(
   "gi-kubernetes|devops|Kubernetes|kubectl + Helm|platform|packages/08-kubernetes.sh|1"
   "gi-terraform|devops|Terraform|HashiCorp official repo|platform|packages/09-terraform.sh|1"
   "gi-ansible|devops|Ansible|ansible-core via pipx|platform|packages/10-ansible.sh|1"
-  "gi-cloud|cloud|Cloud CLIs|AWS, Azure, Google Cloud SDK|platform|packages/11-cloud.sh|1"
   "gi-security|security|Security|UFW, fail2ban, unattended-upgrades|platform|packages/12-security.sh|1"
   "gi-network|network|Network + VPN|httpie, xh, WireGuard, Tailscale|platform|packages/13-network.sh|1"
   "gi-database|data|Database clients|psql, redis-cli, mysql, sqlite3|platform|packages/14-database.sh|1"
@@ -52,8 +51,8 @@ PRESET_DEV_IDE=(system neovim neovim-config lazygit superfile zoxide tmux)
 PRESET_DEV_FULL=(system oh-my-zsh zsh-plugins zoxide lazygit lazydocker superfile neovim neovim-config zsh-config p10k tmux default-shell)
 
 PRESET_DEVOPS=(gi-system gi-shell gi-git gi-docker gi-kubernetes gi-terraform gi-ansible gi-network gi-tui gi-configs)
-PRESET_MLOPS=(gi-system gi-python gi-docker gi-ai gi-cloud gi-monitoring gi-configs)
-PRESET_PLATFORM_FULL=(gi-system gi-shell gi-git gi-python gi-node gi-go gi-rust gi-docker gi-kubernetes gi-terraform gi-ansible gi-cloud gi-security gi-network gi-database gi-monitoring gi-ai gi-tui gi-configs)
+PRESET_MLOPS=(gi-system gi-python gi-docker gi-ai gi-monitoring gi-configs)
+PRESET_PLATFORM_FULL=(gi-system gi-shell gi-git gi-python gi-node gi-go gi-rust gi-docker gi-kubernetes gi-terraform gi-ansible gi-security gi-network gi-database gi-monitoring gi-ai gi-tui gi-configs)
 
 # Short aliases for --only (map user id → catalog id)
 CATALOG_ALIASES=(
@@ -67,7 +66,6 @@ CATALOG_ALIASES=(
   "go:gi-go"
   "rust:gi-rust"
   "ansible:gi-ansible"
-  "cloud:gi-cloud"
   "security:gi-security"
   "network:gi-network"
   "database:gi-database"

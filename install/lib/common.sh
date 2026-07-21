@@ -36,3 +36,39 @@ banner() {
   echo " Dev workstation + DevOps / MLOps platform"
   echo "========================================="
 }
+
+# MW_ON_ERROR: ask | retry | skip | abort  (default: ask if TTY, else skip)
+prompt_failure_action() {
+  local service_id="$1"
+  local preset="${MW_ON_ERROR:-}"
+
+  case "$preset" in
+    retry|skip|abort) echo "$preset"; return 0 ;;
+  esac
+
+  if [[ ! -t 0 ]]; then
+    warn "Non-interactive — skipping failed service: ${service_id}"
+    echo "skip"
+    return 0
+  fi
+
+  echo
+  warn "Service failed: ${service_id}"
+  cat <<EOF
+What would you like to do?
+  [r] Retry this service
+  [s] Skip and continue with next
+  [q] Quit installation
+EOF
+  local choice
+  while true; do
+    printf 'Choice [r/s/q]: '
+    read -r choice
+    case "${choice,,}" in
+      r|retry) echo "retry"; return 0 ;;
+      s|skip)  echo "skip";  return 0 ;;
+      q|quit|abort|a) echo "abort"; return 0 ;;
+      *) warn "Enter r, s, or q" ;;
+    esac
+  done
+}

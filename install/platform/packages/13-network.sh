@@ -8,6 +8,101 @@ GI_PACKAGE_DESC="httpie, xh, grpcurl, doggo, WireGuard, OpenVPN, Tailscale"
 # shellcheck source=../common.sh
 source "${GI_ROOT}/common.sh"
 
+gi_install_optional() {
+  local label="$1"; shift
+  if "$@"; then
+    gi_success "Optional OK: ${label}"
+    return 0
+  fi
+  gi_warn "Optional skipped: ${label}"
+  return 0
+}
+
+gi_install_xh() {
+  gi_have_cmd xh && return 0
+  local tag asset arch json dest bin pattern
+  arch="$(gi_arch_map)"
+  case "$arch" in
+    amd64) pattern="x86_64-unknown-linux" ;;
+    arm64) pattern="aarch64-unknown-linux" ;;
+    *) return 1 ;;
+  esac
+  tag="$(gi_github_latest_tag ducaale/xh)"
+  [[ -n "$tag" ]] || return 1
+  json="$(gi_github_release_json ducaale/xh "$tag")"
+  asset="$(grep -oE '"name": "xh-[^"]+"' <<<"$json" \
+    | cut -d'"' -f4 | grep -F "$pattern" | head -n1)"
+  [[ -n "$asset" ]] || return 1
+  dest="${GI_TMPDIR}/${asset}"
+  gi_download "https://github.com/ducaale/xh/releases/download/${tag}/${asset}" "$dest"
+  case "$asset" in
+    *.tar.xz) tar -xJf "$dest" -C "${GI_TMPDIR}" ;;
+    *.tar.gz) tar -xzf "$dest" -C "${GI_TMPDIR}" ;;
+    *.zip)    unzip -q "$dest" -d "${GI_TMPDIR}" ;;
+  esac
+  bin="$(find "${GI_TMPDIR}" -type f -name xh | head -n1)"
+  [[ -n "$bin" ]] || return 1
+  install -m 755 "$bin" /usr/local/bin/xh
+  gi_register_rollback "rm -f /usr/local/bin/xh"
+}
+
+gi_install_grpcurl() {
+  gi_have_cmd grpcurl && return 0
+  local tag arch asset
+  tag="$(gi_github_latest_tag fullstorydev/grpcurl)"
+  arch="$(gi_arch_map)"
+  asset="grpcurl_${tag#v}_linux_${arch}.tar.gz"
+  if gi_url_ok "https://github.com/fullstorydev/grpcurl/releases/download/${tag}/${asset}"; then
+    gi_download "https://github.com/fullstorydev/grpcurl/releases/download/${tag}/${asset}" "${GI_TMPDIR}/${asset}"
+    tar -xzf "${GI_TMPDIR}/${asset}" -C "${GI_TMPDIR}"
+    install -m 755 "${GI_TMPDIR}/grpcurl" /usr/local/bin/grpcurl
+    gi_register_rollback "rm -f /usr/local/bin/grpcurl"
+    return 0
+  fi
+  export PATH="/usr/local/go/bin:/root/go/bin:$PATH"
+  if gi_have_cmd go; then
+    go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+    install -m 755 "$(go env GOPATH)/bin/grpcurl" /usr/local/bin/grpcurl 2>/dev/null \
+      || ln -sf "$(go env GOPATH)/bin/grpcurl" /usr/local/bin/grpcurl
+    return 0
+  fi
+  return 1
+}
+
+gi_install_doggo() {
+  gi_have_cmd doggo && return 0
+  local tag arch tgz json asset
+  tag="$(gi_github_latest_tag mr-karan/doggo)"
+  arch="$(gi_arch_map)"
+  json="$(gi_github_release_json mr-karan/doggo "$tag")"
+  tgz="$(grep -oE '"name": "doggo[^"]+\.tar\.gz"' <<<"$json" \
+    | cut -d'"' -f4 | grep -i linux | grep -i "$arch" | head -n1)"
+  [[ -n "$tgz" ]] || tgz="doggo_${tag#v}_linux_${arch}.tar.gz"
+  if ! gi_url_ok "https://github.com/mr-karan/doggo/releases/download/${tag}/${tgz}"; then
+    return 1
+  fi
+  gi_download "https://github.com/mr-karan/doggo/releases/download/${tag}/${tgz}" "${GI_TMPDIR}/${tgz}"
+  tar -xzf "${GI_TMPDIR}/${tgz}" -C "${GI_TMPDIR}"
+  install -m 755 "${GI_TMPDIR}/doggo" /usr/local/bin/doggo
+  gi_register_rollback "rm -f /usr/local/bin/doggo"
+}
+
+gi_install_tailscale() {
+  gi_have_cmd tailscale && return 0
+  local codename
+  codename="$(. /etc/os-release && echo "${VERSION_CODENAME:-noble}")"
+  local gpg_url="https://pkgs.tailscale.com/stable/ubuntu/${codename}.noarmor.gpg"
+  local list_url="https://pkgs.tailscale.com/stable/ubuntu/${codename}.tailscale-keyring.list"
+  gi_url_ok "$gpg_url" || return 1
+  gi_download "$gpg_url" "${GI_TMPDIR}/tailscale.gpg"
+  cp "${GI_TMPDIR}/tailscale.gpg" /usr/share/keyrings/tailscale-archive-keyring.gpg
+  gi_download "$list_url" /etc/apt/sources.list.d/tailscale.list
+  gi_register_rollback "rm -f /etc/apt/sources.list.d/tailscale.list /usr/share/keyrings/tailscale-archive-keyring.gpg"
+  gi_apt_update
+  gi_apt_install tailscale
+  systemctl enable tailscaled >/dev/null 2>&1 || true
+}
+
 gi_install() {
   gi_apt_install wireguard openvpn
 
@@ -16,75 +111,10 @@ gi_install() {
   ln -sf /root/.local/bin/http /usr/local/bin/http 2>/dev/null || true
   ln -sf /root/.local/bin/https /usr/local/bin/https 2>/dev/null || true
 
-  # xh — GitHub release
-  if ! gi_have_cmd xh; then
-    local tag asset arch
-    arch="$(gi_arch_map)"
-    tag="$(gi_github_latest_tag duist/xh)"
-    asset="$(curl -fsSL "https://api.github.com/repos/duist/xh/releases/tags/${tag}" \
-      | grep -oE '"name": "xh-[^"]+"' | grep "$arch" | head -n1 | cut -d'"' -f4 || true)"
-    if [[ -z "$asset" ]]; then
-      asset="$(curl -fsSL "https://api.github.com/repos/duist/xh/releases/tags/${tag}" \
-        | grep -oE '"name": "xh-[^"]+"' | grep "$arch" | head -n1 | cut -d'"' -f4)"
-    fi
-    if [[ -n "$asset" ]]; then
-      local dest="${GI_TMPDIR}/${asset}"
-      gi_download "https://github.com/duist/xh/releases/download/${tag}/${asset}" "$dest"
-      if [[ "$asset" == *.tar.gz ]]; then
-        tar -xzf "$dest" -C "${GI_TMPDIR}"
-      elif [[ "$asset" == *.zip ]]; then
-        unzip -q "$dest" -d "${GI_TMPDIR}"
-      else
-        install -m 755 "$dest" /usr/local/bin/xh
-      fi
-      gi_have_cmd xh || install -m 755 "$(find "${GI_TMPDIR}" -name xh -type f | head -n1)" /usr/local/bin/xh
-      gi_register_rollback "rm -f /usr/local/bin/xh"
-    fi
-  fi
-
-  # grpcurl
-  if ! gi_have_cmd grpcurl; then
-    local tag arch asset
-    tag="$(gi_github_latest_tag fullstorydev/grpcurl)"
-    arch="$(gi_arch_map)"
-    asset="grpcurl_${tag#v}_linux_${arch}.tar.gz"
-    if curl -fsI "https://github.com/fullstorydev/grpcurl/releases/download/${tag}/${asset}" | grep -q 200; then
-      gi_download "https://github.com/fullstorydev/grpcurl/releases/download/${tag}/${asset}" "${GI_TMPDIR}/${asset}"
-      tar -xzf "${GI_TMPDIR}/${asset}" -C "${GI_TMPDIR}"
-      install -m 755 "${GI_TMPDIR}/grpcurl" /usr/local/bin/grpcurl
-      gi_register_rollback "rm -f /usr/local/bin/grpcurl"
-    else
-      go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest 2>/dev/null \
-        && ln -sf /root/go/bin/grpcurl /usr/local/bin/grpcurl 2>/dev/null || gi_warn "grpcurl install skipped"
-    fi
-  fi
-
-  # doggo — DNS client
-  if ! gi_have_cmd doggo; then
-    local tag arch tgz
-    tag="$(gi_github_latest_tag mr-karan/doggo)"
-    arch="$(gi_arch_map)"
-    tgz="doggo_${tag#v}_linux_${arch}.tar.gz"
-    if curl -fsI "https://github.com/mr-karan/doggo/releases/download/${tag}/${tgz}" | grep -q 200; then
-      gi_download "https://github.com/mr-karan/doggo/releases/download/${tag}/${tgz}" "${GI_TMPDIR}/${tgz}"
-      tar -xzf "${GI_TMPDIR}/${tgz}" -C "${GI_TMPDIR}"
-      install -m 755 "${GI_TMPDIR}/doggo" /usr/local/bin/doggo
-      gi_register_rollback "rm -f /usr/local/bin/doggo"
-    fi
-  fi
-
-  # Tailscale — official repository
-  if ! gi_have_cmd tailscale; then
-    gi_download "https://pkgs.tailscale.com/stable/ubuntu/$(. /etc/os-release && echo "$VERSION_CODENAME").noarmor.gpg" \
-      "${GI_TMPDIR}/tailscale.gpg"
-    cp "${GI_TMPDIR}/tailscale.gpg" /usr/share/keyrings/tailscale-archive-keyring.gpg
-    gi_download "https://pkgs.tailscale.com/stable/ubuntu/$(. /etc/os-release && echo "$VERSION_CODENAME").tailscale-keyring.list" \
-      /etc/apt/sources.list.d/tailscale.list
-    gi_register_rollback "rm -f /etc/apt/sources.list.d/tailscale.list /usr/share/keyrings/tailscale-archive-keyring.gpg"
-    gi_apt_update
-    gi_apt_install tailscale
-    systemctl enable tailscaled >/dev/null 2>&1 || true
-  fi
+  gi_install_optional "xh" gi_install_xh
+  gi_install_optional "grpcurl" gi_install_grpcurl
+  gi_install_optional "doggo" gi_install_doggo
+  gi_install_optional "tailscale" gi_install_tailscale
 
   GI_INSTALLED_VERSION="network-vpn"
 }
@@ -99,6 +129,7 @@ gi_verify() {
   gi_have_cmd http || gi_have_cmd httpie || { gi_error "httpie missing"; return 1; }
   gi_verify_cmd wg
   gi_have_cmd tailscale || gi_warn "tailscale not installed"
+  gi_have_cmd xh || gi_warn "xh not installed"
 }
 
 gi_package_main "${1:-install}"

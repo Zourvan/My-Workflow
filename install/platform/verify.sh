@@ -17,7 +17,7 @@ gi_ensure_dirs
 
 GI_VERIFY_PACKAGES=(
   "00-system" "01-shell" "02-git" "03-python" "04-node" "05-go" "06-rust"
-  "07-docker" "08-kubernetes" "09-terraform" "10-ansible" "11-cloud"
+  "07-docker" "08-kubernetes" "09-terraform" "10-ansible"
   "12-security" "13-network" "14-database" "15-monitoring" "16-ai" "17-tui"
   "18-configs"
 )

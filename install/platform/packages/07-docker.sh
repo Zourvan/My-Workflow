@@ -34,12 +34,13 @@ gi_install() {
 
   # Dive — GitHub release binary
   if ! gi_have_cmd dive; then
-    local arch tag asset tgz
+    local arch tag asset tgz json
     arch="$(gi_arch_map)"
     tag="$(gi_github_latest_tag wagoodman/dive)"
-    asset="$(curl -fsSL "https://api.github.com/repos/wagoodman/dive/releases/tags/${tag}" \
-      | grep -oE '"name": "dive_[^"]+_linux_[^"]+"' | cut -d'"' -f4 \
-      | grep -E "${arch}|amd64|x86_64" | head -n1)"
+    json="$(gi_github_release_json wagoodman/dive "$tag")"
+    asset="$(grep -oE '"name": "dive_[^"]+\.tar\.gz"' <<<"$json" \
+      | cut -d'"' -f4 | grep -E "linux_${arch}" | head -n1)"
+    [[ -n "$asset" ]] || die "No dive tar.gz asset for ${arch} (${tag})"
     tgz="${GI_TMPDIR}/${asset}"
     gi_download "https://github.com/wagoodman/dive/releases/download/${tag}/${asset}" "$tgz"
     tar -xzf "$tgz" -C "${GI_TMPDIR}"
